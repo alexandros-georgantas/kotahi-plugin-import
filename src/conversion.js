@@ -70,6 +70,13 @@ const extractReviewsAndDecision = async (
                 manuscript.createdOnStepId === currentStep['previous-step'],
             )
 
+            if (!findRelevantManuscript) {
+              logger.error(
+                `${PLUGIN_TAG} CAN NOT FIND RELEVANT MANUSCRIPT TO ATTACH REVIEWS`,
+              )
+              return
+            }
+
             findRelevantManuscript.reviews.push({
               jsonData: {
                 comment: reviewComment,
@@ -106,7 +113,9 @@ const processStep = async (
     await shouldExtractReviewsAndDecision(currentStep)
 
   if (shouldCreateManuscriptOutcome) {
-    logger.info(`${PLUGIN_TAG} creating manuscript version of given preprint`)
+    logger.info(
+      `${PLUGIN_TAG} creating manuscript version of preprint with DOI ${DOI}`,
+    )
 
     const newManuscript = await createManuscript(
       identifier,
@@ -123,7 +132,7 @@ const processStep = async (
 
   if (shouldExtractReviewsAndDecisionOutcome) {
     logger.info(
-      `${PLUGIN_TAG} extracting reviews and decision of given preprint`,
+      `${PLUGIN_TAG} extracting reviews and decision of preprint with DOI ${DOI}`,
     )
     await extractReviewsAndDecision(currentStep, manuscriptsFromDocmap, logger)
   }
@@ -138,27 +147,26 @@ const processDocmap = async (
   logger,
 ) => {
   const manuscriptsFromDocmap = []
-  const docmapSteps = getDocmapStepIds(docmap)
-  logger.info(`${PLUGIN_TAG} start processing of docmap's step`)
-  await Promise.all(
-    docmapSteps.map(async stepId => {
-      const currentStep = getStepByKey(docmap, stepId)
-      return processStep(
-        stepId,
-        currentStep,
-        manuscriptBlueprint,
-        manuscriptsFromDocmap,
-        submissionFormTitleType,
-        hasManuscriptWithDoi,
-        crossrefDictionary,
-        logger,
-      )
-    }),
-  )
+  const docmapStepIds = getDocmapStepIds(docmap)
 
-  /* eslint-disable no-param-reassign */
+  /* eslint-disable-next-line no-restricted-syntax */
+  for (const stepId of docmapStepIds) {
+    const currentStep = getStepByKey(docmap, stepId)
+    /* eslint-disable-next-line no-await-in-loop */
+    await processStep(
+      stepId,
+      currentStep,
+      manuscriptBlueprint,
+      manuscriptsFromDocmap,
+      submissionFormTitleType,
+      hasManuscriptWithDoi,
+      crossrefDictionary,
+      logger,
+    )
+  }
+
+  /* eslint-disable-next-line no-param-reassign */
   manuscriptsFromDocmap.forEach(manuscript => delete manuscript.createdOnStepId)
-  /* eslint-enable no-param-reassign */
 
   if (manuscriptsFromDocmap.length === 1) {
     return manuscriptsFromDocmap[0]

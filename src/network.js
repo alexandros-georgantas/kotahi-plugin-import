@@ -10,7 +10,7 @@ const { validateDataBasedOnSchema } = require('./helpers')
 const makeAuthenticatedCallToDataHub = async URL => {
   try {
     if (!URL) {
-      throw new Error(`${PLUGIN_TAG} url argument is undefined`)
+      throw new Error(`${PLUGIN_TAG} URL argument is undefined`)
     }
 
     const dataHubUsername =
