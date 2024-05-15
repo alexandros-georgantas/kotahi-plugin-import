@@ -96,7 +96,6 @@ const processStep = async (
   manuscriptBlueprint,
   manuscriptsFromDocmap,
   submissionFormTitleType,
-  hasManuscriptWithDoi,
   crossrefDictionary,
   logger,
 ) => {
@@ -105,8 +104,6 @@ const processStep = async (
 
   const shouldCreateManuscriptOutcome = await shouldCreateManuscript(
     currentStep,
-    DOI,
-    hasManuscriptWithDoi,
   )
 
   const shouldExtractReviewsAndDecisionOutcome =
@@ -143,7 +140,6 @@ const processDocmap = async (
   crossrefDictionary,
   manuscriptBlueprint,
   submissionFormTitleType,
-  hasManuscriptWithDoi,
   logger,
 ) => {
   const manuscriptsFromDocmap = []
@@ -159,7 +155,6 @@ const processDocmap = async (
       manuscriptBlueprint,
       manuscriptsFromDocmap,
       submissionFormTitleType,
-      hasManuscriptWithDoi,
       crossrefDictionary,
       logger,
     )
@@ -219,7 +214,6 @@ const processDocmaps = async (
   submissionForm,
   manuscriptBlueprint,
   hasManuscriptWithDoi,
-  lastImportDate,
   logger,
 ) => {
   // TODO: If title is TextField type, strip the HTML tags (WHY??)
@@ -235,9 +229,9 @@ const processDocmaps = async (
     `${PLUGIN_TAG} start docmaps clean-up by removing drafts and already imported`,
   )
 
-  const docmapsCleanFromDraftsAndAlreadyImported = docmapsCleaner(
+  const docmapsCleanFromDraftsAndAlreadyImported = await docmapsCleaner(
     docmaps,
-    lastImportDate,
+    hasManuscriptWithDoi,
   )
 
   logger.info(
@@ -255,7 +249,6 @@ const processDocmaps = async (
         crossRefDictionary,
         manuscriptBlueprint,
         submissionFormTitleType,
-        hasManuscriptWithDoi,
         logger,
       )
     }),

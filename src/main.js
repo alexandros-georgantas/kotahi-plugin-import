@@ -8,7 +8,7 @@ const {
 
 const doImport =
   (getStubManuscriptObject, hasManuscriptWithDoi, getSubmissionForm, logger) =>
-  async ({ lastImportDate }) => {
+  async () => {
     logger.info(`${PLUGIN_TAG} retrieving data from Data Hub`)
     const retrievedDocMaps = await getDocMapsFromDataHub(logger)
 
@@ -24,7 +24,6 @@ const doImport =
       submissionForm,
       manuscriptBlueprint,
       hasManuscriptWithDoi,
-      lastImportDate,
       logger,
     )
   }

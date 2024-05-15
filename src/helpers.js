@@ -99,12 +99,10 @@ const getDocmapIdentifier = step => {
   return foundIdentifier
 }
 
-const docmapsCleaner = (docmaps, lastImportDate) => {
-  return docmaps.filter(docmap => {
-    const lastImportCriteria =
-      lastImportDate === null ||
-      new Date(docmap.created) > new Date(lastImportDate)
+const docmapsCleaner = async (docmaps, hasManuscriptWithDoi) => {
+  const result = []
 
+  const filtered = docmaps.filter(docmap => {
     const firstStepKey = getFirstStepKey(docmap)
     const assertions = getStepAssertions(docmap, firstStepKey)
     const actions = getStepActions(docmap, firstStepKey)
@@ -119,21 +117,30 @@ const docmapsCleaner = (docmaps, lastImportDate) => {
       OUTPUT_TYPE_PREPRINT,
     )
 
-    return (
-      lastImportCriteria && hasUnderReviewAssertion && hasActionOutputPreprint
-    )
+    return hasUnderReviewAssertion && hasActionOutputPreprint
   })
+
+  await Promise.all(
+    filtered.map(async item => {
+      const DOI = getDOIfromFirstStepInputs(item)
+
+      const manuscriptWithDOIExists = await hasManuscriptWithDoi(
+        generateURLBasedOnDOI(DOI),
+        true,
+      ) // TODO: check why the second argument
+
+      if (!manuscriptWithDOIExists) {
+        result.push(item)
+      }
+    }),
+  )
+
+  return result
 }
 
 const generateURLBasedOnDOI = DOI => `https://doi.org/${DOI}`
 
-const shouldCreateManuscript = async (step, DOI, hasManuscriptWithDoi) => {
-  const manuscriptWithDOIExists = await hasManuscriptWithDoi(DOI, true) // TODO: check why the second argument
-
-  if (manuscriptWithDOIExists) {
-    return false
-  }
-
+const shouldCreateManuscript = async step => {
   const { assertions, actions } = step
 
   const stepAssertions = getStepAssertionByStatus(
