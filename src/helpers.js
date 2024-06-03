@@ -7,6 +7,7 @@ const {
     ASSERTION_STATUS_PEER_REVIEWED,
     ASSERTION_STATUS_REVISED,
     OUTPUT_TYPE_PREPRINT,
+    OUTPUT_TYPE_EVALUATION_SUMMARY,
   },
   labels: { PLUGIN_TAG },
 } = require('./constants')
@@ -99,8 +100,29 @@ const getDocmapIdentifier = step => {
   return foundIdentifier
 }
 
+const hasReviewsAndAssessment = docmap => {
+  const firstStepKey = getFirstStepKey(docmap)
+  const secondStepKey = docmap.steps[firstStepKey]['next-step']
+  const assertions = getStepAssertions(docmap, secondStepKey)
+
+  const actions = getStepActions(docmap, secondStepKey)
+
+  const hasPeerReviewedAssertion = !!getStepAssertionByStatus(
+    assertions,
+    ASSERTION_STATUS_PEER_REVIEWED,
+  )
+
+  const hasActionOutputEvaluationSummary = hasActionOutput(
+    actions,
+    OUTPUT_TYPE_EVALUATION_SUMMARY,
+  )
+
+  return hasPeerReviewedAssertion && hasActionOutputEvaluationSummary
+}
+
 const docmapsCleaner = async (docmaps, hasManuscriptWithDoi) => {
   const result = []
+  // console.log('AAAA', docmaps)
 
   const filtered = docmaps.filter(docmap => {
     const firstStepKey = getFirstStepKey(docmap)
@@ -117,7 +139,17 @@ const docmapsCleaner = async (docmaps, hasManuscriptWithDoi) => {
       OUTPUT_TYPE_PREPRINT,
     )
 
-    return hasUnderReviewAssertion && hasActionOutputPreprint
+    let hasStepWithAssessment
+
+    if (Object.keys(docmap.steps).length > 1) {
+      hasStepWithAssessment = hasReviewsAndAssessment(docmap)
+    }
+
+    return (
+      hasUnderReviewAssertion &&
+      hasActionOutputPreprint &&
+      hasStepWithAssessment
+    )
   })
 
   await Promise.all(
