@@ -88,7 +88,9 @@ const getInfoFromCrossrefInBulk = async (dois, logger) => {
       )
     }
 
-    const { data } = await axios.get(`${crossrefURL}/?filter=${dois}&rows=100`)
+    const { data } = await axios.get(
+      `${crossrefURL}/?filter=${dois}&rows=100&mailto=adam@coko.foundation`,
+    )
 
     if (!data) {
       logger.error(
@@ -134,7 +136,7 @@ const getInfoFromCrossrefInBulk = async (dois, logger) => {
       }
     }
 
-    return {}
+    return []
   }
 }
 
