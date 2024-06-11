@@ -41,6 +41,8 @@ const createManuscript = (
     submissionFormTitleType === 'TextField'
       ? crossrefDictionary[DOI]?.title?.replace(/<[^>]*>/g, '') || ''
       : crossrefDictionary[DOI]?.title || ''
+  newManuscript.submission.$abstract = crossrefDictionary[DOI]?.abstract
+
   logger.info(
     `${PLUGIN_TAG} creating manuscript with DOI ${DOI} and identifier ${identifier}`,
   )
@@ -181,30 +183,31 @@ const generateCrossrefDictionary = async (docmaps, logger) => {
 
   const chunks = chunk(filterArguments, 100)
 
-  await Promise.all(
-    chunks.map(async partition => {
-      let filterValues = ''
+  // THIS SERIALIZATION IS IMPORTANT AS WITHOUT THIS APPROACH CROSSREF BANS THE IP WITH TOO MANY REQUESTS STATUS
+  /* eslint-disable no-restricted-syntax, no-await-in-loop */
+  for (const partition of chunks) {
+    let filterValues = ''
 
-      partition.forEach(item => {
-        filterValues += `${item},`
-      })
+    partition.forEach(item => {
+      filterValues += `${item},`
+    })
 
-      const crossRefs = await getInfoFromCrossrefInBulk(
-        filterValues.replace(/.$/, ''),
-        logger,
-      )
+    const crossRefs = await getInfoFromCrossrefInBulk(
+      filterValues.replace(/.$/, ''),
+      logger,
+    )
 
-      crossRefs.forEach(crossref => {
-        const { DOI, title, resource } = crossref
+    crossRefs?.forEach(crossref => {
+      const { DOI, title, resource, abstract } = crossref
 
-        const {
-          primary: { URL },
-        } = resource
+      const {
+        primary: { URL },
+      } = resource
 
-        res[DOI] = { title: title[0], link: URL }
-      })
-    }),
-  )
+      res[DOI] = { title: title[0], link: URL, abstract }
+    })
+  }
+  /* eslint-enable no-restricted-syntax, no-await-in-loop */
 
   return res
 }
@@ -240,6 +243,7 @@ const processDocmaps = async (
 
   const crossRefDictionary = await generateCrossrefDictionary(
     docmapsCleanFromDraftsAndAlreadyImported,
+    logger,
   )
 
   return Promise.all(
